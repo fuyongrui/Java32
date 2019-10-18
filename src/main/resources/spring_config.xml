@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:mybatis="http://mybatis.org/schema/mybatis-spring"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop.xsd
+       http://mybatis.org/schema/mybatis-spring
+       http://mybatis.org/schema/mybatis-spring.xsd">
+
+    <!--扫描service层-->
+    <context:component-scan base-package="com.xdkj.service"/>
+
+    <!--加载数据库配置文件-->
+    <context:property-placeholder location="classpath:jdbc.properties" ignore-unresolvable="true" order="1"/>
+
+    <context:property-placeholder location="classpath:mail.properties" ignore-unresolvable="true" order="0"/>
+
+
+    <bean id="javamailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="username" value="${sendaccount}"/>
+        <property name="password" value="${passsword}"/>
+        <property name="host" value="${host}"/>
+        <property name="port" value="${port}"/>
+        <property name="protocol" value="smtp"/>
+        <property name="defaultEncoding" value="utf-8"/>
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.auth">true</prop>
+                <prop key="mail.debug">true</prop>
+            </props>
+        </property>
+
+    </bean>
+
+
+
+
+
+    <!--配置数据源-->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <property name="driverClass" value="${driverClass}"/>
+        <property name="jdbcUrl" value="${url}"/>
+        <property name="user" value="${user}"/>
+        <property name="password" value="${password}"/>
+        <property name="initialPoolSize" value="5"/>
+        <property name="minPoolSize" value="5"/>
+        <property name="acquireIncrement" value="5"/>
+        <property name="maxPoolSize" value="30"/>
+    </bean>
+
+    <!--mybatis 配置-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+       <!-- 配置mybatis 核心配置文件位置-->
+        <property name="configLocation" value="classpath:mybatis_config.xml"></property>
+    </bean>
+    <!--扫描mapper对应接口-->
+    <mybatis:scan base-package="com.xdkj.dao"/>
+
+
+
+    <!--配置事务管理器-->
+    <bean id="transacationManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+       <!-- 传递数据源-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <!--配置通知-->
+    <tx:advice transaction-manager="transacationManager" id="tx">
+
+        <tx:attributes>
+            <tx:method name="find*" isolation="DEFAULT" propagation="REQUIRED" read-only="true"/>
+            <tx:method name="delete*" isolation="DEFAULT" propagation="REQUIRED" read-only="false"/>
+            <tx:method name="update*" isolation="DEFAULT" propagation="REQUIRED" read-only="false"/>
+            <tx:method name="add*" isolation="DEFAULT" propagation="REQUIRED" read-only="false"/>
+        </tx:attributes>
+
+    </tx:advice>
+
+    <!--使用aop进行配置-->
+    <aop:config>
+
+        <!--配置切点-->
+        <aop:pointcut id="qd" expression="within(com.xdkj.service..*)"/>
+
+       <!-- 配置切面-->
+        <aop:advisor advice-ref="tx" pointcut-ref="qd"></aop:advisor>
+
+    </aop:config>
+
+
+
+
+
+
+</beans>
